@@ -4,7 +4,7 @@ import { vehicleDataAPI } from "../server/allApi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-function Add() {
+function Add({ addUserToList }) {
   const [userInput, setUserInput] = useState({
     vehicleNo: "",
     mobile: "",
@@ -37,6 +37,7 @@ function Add() {
         const result = await vehicleDataAPI(userInput);
         if (result.status === 200) {
           toast.success(`${userInput.vehicleNo} vehicle details are uploaded`);
+          addUserToList(userInput);
           handleClose();
         } else {
           toast.error("Something went wrong");
@@ -74,41 +75,22 @@ function Add() {
       setUserInput((prevState) => ({ ...prevState, uptoDate: "Failed" }));
       return;
     }
-  
+    
     let date = new Date(validDate);
-    let originalDay = date.getDate();
-  
-    // Fix - Set the date to the 1st before adding months
-    date.setDate(1);
-    let newMonth = date.getMonth() + parseInt(duration);
-    let newYear = date.getFullYear() + Math.floor(newMonth / 12);
-    newMonth = newMonth % 12;
-  
-    // Get the last valid day of the new month
-    let lastDayOfNewMonth = new Date(newYear, newMonth + 1, 0).getDate();
-  
-    // Restore the original day or set it to the last valid day if out of range
-    let newDay = originalDay > lastDayOfNewMonth ? lastDayOfNewMonth : originalDay;
-  
-    // Set final date with new adjustments
-    date.setFullYear(newYear, newMonth, newDay);
-  
-    // 🔥 Reduce the date by 1 day
+    date.setMonth(date.getMonth() + parseInt(duration));
     date.setDate(date.getDate() - 1);
-  
+    
     setUserInput((prevState) => ({ ...prevState, uptoDate: formatDate(date) }));
   };
-  
-  
 
   const formatDate = (date) => {
     if (!date) return "Failed";
-    return `${String(date.getDate()).padStart(2, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   };
 
   return (
     <>
-      <Button variant="primary" onClick={handleShow}>Add Details</Button>
+      <button className="p-2" style={{ background: "#6A9C89", border: "none" , borderRadius:"6px"}}  onClick={handleShow}><i style={{color:"#FFF5E4"}} className="fa-solid fa-user-plus"></i></button>
 
       <Modal show={show} onHide={handleClose} backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
@@ -128,44 +110,26 @@ function Add() {
               <Form.Control type="date" value={userInput.validDate} onChange={handleValidDateChange} />
             </FloatingLabel>
 
-            {/* Three Buttons for Duration Selection */}
             <Row className="mb-3">
               <Col>
-                <Button
-                  variant={duration === "6" ? "success" : "outline-success"}
-                  className="w-100"
-                  onClick={() => handleDurationSelect("6")}
-                >
+                <Button variant={duration === "6" ? "success" : "outline-success"} className="w-100" onClick={() => handleDurationSelect("6")}>
                   6 Months
                 </Button>
               </Col>
               <Col>
-                <Button
-                  variant={duration === "12" ? "success" : "outline-success"}
-                  className="w-100"
-                  onClick={() => handleDurationSelect("12")}
-                >
+                <Button variant={duration === "12" ? "success" : "outline-success"} className="w-100" onClick={() => handleDurationSelect("12")}>
                   12 Months
                 </Button>
               </Col>
               <Col>
-                <Button
-                  variant={duration === "Fail" ? "danger" : "outline-danger"}
-                  className="w-100"
-                  onClick={() => handleDurationSelect("Fail")}
-                >
+                <Button variant={duration === "Fail" ? "danger" : "outline-danger"} className="w-100" onClick={() => handleDurationSelect("Fail")}>
                   Fail
                 </Button>
               </Col>
             </Row>
 
             <FloatingLabel label="Upto Date" className="mb-3">
-              <Form.Control
-                type="text"
-                value={userInput.uptoDate}
-                readOnly
-                style={{ color: userInput.uptoDate === "Failed" ? "red" : "black" }}
-              />
+              <Form.Control type="text" value={userInput.uptoDate} readOnly style={{ color: userInput.uptoDate === "Failed" ? "red" : "black" }} />
             </FloatingLabel>
 
             <FloatingLabel label="Rate:" className="mb-3">

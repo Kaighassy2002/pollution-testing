@@ -4,7 +4,7 @@ import { updateAPI } from "../server/allApi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const Edit = ({ show, handleClose, userId, onUpdate, detail }) => {
+const Edit = ({ show, handleClose,  onUpdate, detail }) => {
   const [user, setUser] = useState({
     id: "",
     vehicleNo: "",
@@ -14,6 +14,8 @@ const Edit = ({ show, handleClose, userId, onUpdate, detail }) => {
     rate: "",
   });
 
+
+  
   // Populate form fields when detail is received
   useEffect(() => {
     if (detail) {
@@ -60,7 +62,7 @@ const Edit = ({ show, handleClose, userId, onUpdate, detail }) => {
     try {
       await updateAPI(user.id, user);
       toast.success("User updated successfully!");
-      onUpdate(user); // Update parent state
+      onUpdate(); // Update parent state
       handleClose(); // Close the modal
     } catch (error) {
       console.error("Error updating user:", error);

@@ -6,13 +6,13 @@ import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-function Detail() {
+function Detail({ users }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [details, setDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 15; // Number of records per page
+  const recordsPerPage = 15; 
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -20,46 +20,44 @@ function Detail() {
     const fetchVehicleData = async () => {
       try {
         const response = await detailsAPI();
-        const fetchedData = response?.data || [];
-
-        // Reverse order to show latest first
-        setDetails([...fetchedData.reverse()]);
-        setLoading(false);
+        setDetails(response?.data?.reverse() || []);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to fetch user details.");
+      } finally {
         setLoading(false);
       }
     };
-
     fetchVehicleData();
   }, []);
 
-  // Function to add new data dynamically
-  const addNewRecord = (newRecord) => {
-    setDetails((prevDetails) => [newRecord, ...prevDetails]);
+  useEffect(() => {
+    if (users.length > 0) {
+      setDetails((prev) => [...users, ...prev]);
+    }
+  }, [users]);
+
+  const updateUserInState = async () => {
+    try {
+      const response = await detailsAPI();
+      setDetails(response?.data?.reverse() || []);
+      setShowEditModal(false);
+    } catch (error) {
+      console.error("Error fetching updated data:", error);
+      toast.error("Failed to fetch updated data");
+    }
   };
 
-  // Function to update user details in state after editing
-  const updateUserInState = (updatedUser) => {
-    setDetails((prevDetails) =>
-      prevDetails.map((user) => (user._id === updatedUser._id ? updatedUser : user))
-    );
-  };
-
-  // Apply search filter to the entire dataset BEFORE pagination
   const filteredData = details.filter(
     (detail) =>
       detail.vehicleNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       detail.mobile?.includes(searchTerm)
   );
 
-  // Reset to the first page when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Pagination Logic (applied AFTER filtering)
   const totalPages = Math.ceil(filteredData.length / recordsPerPage);
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
@@ -67,85 +65,67 @@ function Detail() {
 
   const formatDate = (dateString) => {
     if (!dateString || dateString === "Failed") return "Failed";
-  
-    const date = new Date(dateString);
-  
-    // If JavaScript fails to parse the date, return "Failed"
-    if (isNaN(date)) return "Failed";
-  
-    return `${String(date.getDate()).padStart(2, "0")}-${String(
-      date.getMonth() + 1
-    ).padStart(2, "0")}-${date.getFullYear()}`;
-  };
-  
-  
-  
+    if (dateString.includes("/")) return dateString;
 
-  // Open edit modal with selected user
+    const date = new Date(dateString);
+    if (isNaN(date)) return "Failed";
+
+    return `${String(date.getDate()).padStart(2, "0")}/${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}/${date.getFullYear()}`;
+  };
+
   const handleEditClick = (user) => {
     setSelectedUser(user);
     setShowEditModal(true);
   };
-  const fetchVehicleData = async () => {
-    try {
-      const response = await detailsAPI();
-      const fetchedData = response?.data || [];
-  
-      // Reverse order to show latest first
-      setDetails([...fetchedData.reverse()]);
-      setLoading(false);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("Failed to fetch user details.");
-      setLoading(false);
-    }
-  };
-  
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchVehicleData();
-  }, []);
-  
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this vehicle?")) {
       try {
         await deleteAPI(id);
         toast.info("Vehicle deleted successfully");
-        fetchVehicleData(); 
+        setDetails((prev) => prev.filter((user) => user._id !== id));
       } catch (error) {
         console.error("Error deleting vehicle:", error);
       }
     }
   };
-  
-
-  
 
   return (
-    <>
-      <div className="mt-5">
-        <h4 className="text-center mb-3">Vehicle Details</h4>
-        <div className="d-flex justify-content-between">
+   <div style={{ minHeight: "100vh", paddingBottom: "40px" }}>
+      <div className="container mt-5">
+      <h4 className="text-center mb-4 fw-bold" style={{ color: "#6A9C89" }}>
+          <i className="fa-solid fa-car" style={{ color: "#FFA725" }}></i> Vehicle Details
+        </h4>
+  
+        {/* Search and Buttons */}
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <InputGroup className="w-50 shadow-sm">
+            <InputGroup.Text className=" border-0" style={{backgroundColor:'#6A9C89'}}>
+              <i className="fa-solid fa-magnifying-glass text-secondary"></i>
+            </InputGroup.Text>
+            <Form.Control
+              type="text"
+              placeholder="Search by Vehicle No or Mobile No..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border-0"
+              style={{backgroundColor:'#C1D8C3'}}
+            />
+          </InputGroup>
           <div>
-            <InputGroup className="mb-3">
-              <InputGroup.Text className="bg-white">
-                <i className="fa-solid fa-magnifying-glass"></i>
-              </InputGroup.Text>
-              <Form.Control
-                type="text"
-                placeholder="Search by Vehicle No or Mobile No..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </InputGroup>
-          </div>
-          <div>
-            
-           <Link to={'/filter'}> <Button>Filter</Button></Link>
+            <Link to="/message">
+              <button style={{fontSize:"30px"}} className="me-2 btn"><i style={{color:'#FFA725'}} class="fa-solid fa-envelope-circle-check"></i></button>
+            </Link>
+            <Link to="/filter">
+              <Button style={{ background: "#6A9C89", border: "none" }}> Filter</Button>
+            </Link>
           </div>
         </div>
-        <div className="container mt-5 mb-2">
+  
+        {/* Table Section */}
+        <div className="table-responsive shadow rounded-4 p-3 bg-white">
           {loading ? (
             <div className="text-center">Loading...</div>
           ) : error ? (
@@ -153,15 +133,15 @@ function Detail() {
           ) : (
             <>
               <Table striped bordered hover responsive className="table-custom">
-                <thead className="table-dark">
-                  <tr>
-                    <th>S.No</th>
-                    <th>Vehicle No</th>
-                    <th>Mobile No</th>
-                    <th>Valid Date</th>
-                    <th>Upto Date</th>
-                    <th>Rate</th>
-                    <th>Actions</th>
+                <thead style={{ background: "#6A9C89", color:'#C1D8C3' }}>
+                  <tr >
+                    <th style={{color:'#FFA725'}}>#</th>
+                    <th style={{color:'#FFA725'}}>Vehicle No</th>
+                    <th style={{color:'#FFA725'}}>Mobile No</th>
+                    <th style={{color:'#FFA725'}}>Valid Date</th>
+                    <th style={{color:'#FFA725'}}>Upto Date</th>
+                    <th style={{color:'#FFA725'}}>Rate</th>
+                    <th style={{color:'#FFA725'}}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,20 +149,20 @@ function Detail() {
                     currentRecords.map((detail, index) => (
                       <tr key={detail._id || index}>
                         <td>{indexOfFirstRecord + index + 1}</td>
-                        <td>{detail.vehicleNo} </td>
+                        <td>{detail.vehicleNo}</td>
                         <td>{detail.mobile}</td>
                         <td>{formatDate(detail.validDate)}</td>
                         <td style={{ color: detail.uptoDate === "Failed" ? "red" : "black" }}>
-  {formatDate(detail.uptoDate)}
-</td>
+                          {formatDate(detail.uptoDate)}
+                        </td>
                         <td>₹{detail.rate}.00</td>
-                        <td className="d-flex">
-                          <Button variant="light" onClick={() => handleEditClick(detail)}>
-                            <i className="fa-solid fa-pen"></i>
+                        <td>
+                          <Button style={{ background: "#6A9C89" }}  size="sm" onClick={() => handleEditClick(detail)}>
+                            <i style={{  color: "#FFF5E4" }} className="fa-solid fa-pen"></i>
                           </Button>
-                          <Button variant="outline-light" className="ms-2 " onClick={() => handleDelete(detail._id)}>
-                            <i className="fa-solid fa-trash text-danger"></i>
-                          </Button>
+                          <button  size="sm" className="ms-2 btn" onClick={() => handleDelete(detail._id)}>
+                            <i style={{  color: "#6A9C89" }} className="fa-solid fa-trash"></i>
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -195,7 +175,7 @@ function Detail() {
                   )}
                 </tbody>
               </Table>
-
+  
               {/* Pagination Controls */}
               {filteredData.length > recordsPerPage && (
                 <div className="d-flex justify-content-center mt-3">
@@ -205,7 +185,7 @@ function Detail() {
                     disabled={currentPage === 1}
                     className="me-2"
                   >
-                    Previous
+                    ◀ Previous
                   </Button>
                   <span className="align-self-center">
                     Page {currentPage} of {totalPages}
@@ -216,38 +196,27 @@ function Detail() {
                     disabled={currentPage === totalPages}
                     className="ms-2"
                   >
-                    Next
+                    Next ▶
                   </Button>
                 </div>
               )}
             </>
           )}
         </div>
+  
+        {/* Edit Modal */}
+        {selectedUser && (
+          <Edit
+            show={showEditModal}
+            handleClose={() => setShowEditModal(false)}
+            detail={selectedUser}
+            onUpdate={updateUserInState}
+          />
+        )}
+  
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar theme="dark" />
       </div>
-
-      {/* Edit Modal */}
-      {selectedUser && (
-  <Edit
-  show={showEditModal}
-  handleClose={() => setShowEditModal(false)}
-  detail={selectedUser}
-  onUpdate={updateUserInState} // ✅ This correctly updates state
-/>
-)}
-
-<ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-      />
-    </>
+   </div>
   );
 }
 
